@@ -1,8 +1,11 @@
 import { Router } from "express";
-import { getTheMessage, userAuth } from "../controllers/user_auth.controller";
+import {
+  gettingUserTimeSpent,
+  userAuth,
+} from "../controllers/user_auth.controller";
 
 const userRouter = Router();
 userRouter.route("/authorize").post(userAuth);
-userRouter.route("/getTheMessage").post(getTheMessage);
+userRouter.route("/coding-stats").post(gettingUserTimeSpent);
 
 export default userRouter;

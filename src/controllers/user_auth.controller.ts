@@ -56,13 +56,31 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-const getTheMessage = asyncHandler(async (req: Request, res: Response) => {
+const gettingUserTimeSpent = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const payload = req.body.payload;
+      if (!payload) {
+        throw new ApiError(401, "message is empty");
+      }
+      console.log(payload);
+    } catch (error: any) {
+      const errorStr = `Error has occurred on UserAuth: ${error.message}`;
+      console.log(errorStr);
+      res
+        .status(error.statusCode || 500)
+        .send(new ApiError(error.statusCode || 500, errorStr));
+    }
+  }
+);
+
+const updatingUserStreak = async (req: Request, res: Response) => {
   try {
-    const message = req.body.message;
-    if (!message) {
+    const payload = req.body.payload;
+    if (!payload) {
       throw new ApiError(401, "message is empty");
     }
-    console.log(message);
+    console.log(payload);
   } catch (error: any) {
     const errorStr = `Error has occurred on UserAuth: ${error.message}`;
     console.log(errorStr);
@@ -70,6 +88,5 @@ const getTheMessage = asyncHandler(async (req: Request, res: Response) => {
       .status(error.statusCode || 500)
       .send(new ApiError(error.statusCode || 500, errorStr));
   }
-});
-
-export { userAuth, getTheMessage };
+};
+export { userAuth, gettingUserTimeSpent };
