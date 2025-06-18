@@ -56,4 +56,20 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export default userAuth;
+const getTheMessage = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const message = req.body.message;
+    if (!message) {
+      throw new ApiError(401, "message is empty");
+    }
+    console.log(message);
+  } catch (error: any) {
+    const errorStr = `Error has occurred on UserAuth: ${error.message}`;
+    console.log(errorStr);
+    res
+      .status(error.statusCode || 500)
+      .send(new ApiError(error.statusCode || 500, errorStr));
+  }
+});
+
+export { userAuth, getTheMessage };
