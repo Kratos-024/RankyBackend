@@ -46,7 +46,7 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
     }
     const client_id = process.env.CLIENT_ID;
     const client_secret = process.env.CLIENT_SECRET;
-    const redirect_uri = "http://localhost/5173/profile";
+    const redirect_uri = "http://localhost/5173";
 
     const authorizingUser = await fetch(
       "https://github.com/login/oauth/access_token",
@@ -139,7 +139,6 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
 
       const loginToAccount = await prisma.userAccount.update({
         where: {
-          email,
           username: login,
         },
         data: { refreshToken, accessToken },
@@ -169,4 +168,38 @@ const verifyUser = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).send(new ApiResponse(201, "Successfully verify the user"));
 });
 
-export { userAuth, verifyUser };
+const logoutUser = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const username = req.body.username || req.query.username;
+
+    if (!username) {
+      throw new ApiError(400, "Username is required to logout");
+    }
+
+    const user = await prisma.userAccount.findUnique({
+      where: { username: String(username) },
+    });
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    await prisma.userAccount.update({
+      where: { username: String(username) },
+      data: {
+        accessToken: "",
+        refreshToken: "",
+      },
+    });
+
+    res.status(200).send(new ApiResponse(200, "Successfully logged out", null));
+  } catch (error: any) {
+    const errorStr = `Error during logout: ${error.message}`;
+    console.log(errorStr);
+    res
+      .status(error.statusCode || 500)
+      .send(new ApiError(error.statusCode || 500, errorStr));
+  }
+});
+
+export { userAuth, verifyUser, logoutUser };

@@ -2,54 +2,47 @@ import { NextFunction, Request, Response } from "express";
 import { ApiError } from "../utils/ApiError";
 import { verify } from "jsonwebtoken";
 
-const veriyUserAuth = async (
+const verifyUserAuth = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const refreshToken = req.headers.authorization || req.cookies.refreshToken;
+
     if (!refreshToken) {
-      const errorResponse = {
-        message: "Refresh token is not present please login",
-        statusCode: 403,
-        data: { refreshToken: "" },
-      };
-
-      throw new Error(`${errorResponse}`);
+      throw new ApiError(403, "Refresh token is not present, please login", {
+        refreshToken: "",
+      });
     }
-    const refreshTokenSecret = process.env.REFRESHTOKENSECRET
-      ? process.env.REFRESHTOKENSECRET
-      : false;
-    if (!refreshTokenSecret) {
-      const errorResponse = {
-        message: "Refresh token Secret not present please login",
-        statusCode: 500,
-        data: { refreshToken: "" },
-      };
 
-      throw new Error(`${errorResponse}`);
+    const refreshTokenSecret = process.env.REFRESHTOKENSECRET;
+    if (!refreshTokenSecret) {
+      throw new ApiError(
+        500,
+        "Refresh token secret not present in environment",
+        {
+          refreshToken: "",
+        }
+      );
     }
 
     const verifyTheToken = verify(refreshToken, refreshTokenSecret);
     if (!verifyTheToken) {
-      const errorResponse = {
-        message: "Verification of token failed",
-        statusCode: 403,
-        data: { refreshToken: "" },
-      };
-
-      throw new Error(`${errorResponse}`);
+      throw new ApiError(403, "Verification of token failed", {
+        refreshToken: "",
+      });
     }
+
     next();
   } catch (error: any) {
-    const errorStr = `Error has been occrued on middleware, ${error.errorResponse.message}`;
-    const statusCode = error.errorResponse.statusCode || 500;
-    res
-      .status(statusCode)
-      .send(new ApiError(statusCode, errorStr, error.errorResponse.data));
-    return;
+    const statusCode = error.statusCode || 500;
+    const message =
+      error.message || "Unexpected error occurred in auth middleware";
+    const data = error.data || {};
+
+    res.status(statusCode).send(new ApiError(statusCode, message, data));
   }
 };
 
-export default veriyUserAuth;
+export default verifyUserAuth;

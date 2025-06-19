@@ -12,7 +12,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = ""
+  url      = "postgresql://ranky_owner:npg_4Q6LlnqhSGvE@ep-steep-hall-a80y0y04-pooler.eastus2.azure.neon.tech/ranky?sslmode=require"
 }
 
 model Streak {
@@ -29,7 +29,7 @@ model UserAccount {
   uniqueToken String?  @unique()
   username String? @unique()
   avatar_url String?
-  email String
+  email String @unique()
   refreshToken String?
   accessToken String?
   bio String?
