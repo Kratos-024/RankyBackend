@@ -27,8 +27,13 @@ model UserAccount {
   id String @unique() @default(uuid())
   name String
   uniqueToken String  @unique()
-  username String @unique()
+  username String? @unique()
+  avatar_url String?
   email String
+  refreshToken String?
+  accessToken String?
+  bio String?
+  twitter_username String?
 }
 model Languages {
   id String @unique() @default(uuid())
