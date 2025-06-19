@@ -12,17 +12,22 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = ""
+  url      = "postgresql://neondb_owner:npg_RQw4Djml5BfG@ep-morning-sun-a8h45sr5-pooler.eastus2.azure.neon.tech/neondb?sslmode=require"
 }
+
 model Streak {
   id String @unique() @default(uuid())
-  streak Int 
-  UserDailyStat UserDailyStats @relation(fields: [id],references: [id])
+  uniqueToken String  @unique()
+  date String
+  username String @unique()
+  streak Int  
 }
 
 model UserAccount {
   id String @unique() @default(uuid())
-  username String
+  name String
+  uniqueToken String  @unique()
+  username String @unique()
   email String
 }
 model Languages {
@@ -30,19 +35,26 @@ model Languages {
   language String[] 
 }
 
-model UserStats {
-  id String @unique() @default(uuid())
-}
 
 model UserDailyStats {
-  id String @unique() @default(uuid())
-  date String @unique()
-  totalTimeSeconds Decimal
-  totalTimeMinutes Decimal
-  totalWords Int
-  totalLines Int
-  languages String[] 
-  streak Streak[]
-  earlyMorning String
-  lateNight String
+  id                String  @id @default(uuid()) 
+  uniqueToken       String
+  date              String
+  totalTimeSeconds  Decimal
+  totalTimeMinutes  Decimal
+  totalWords        Int
+  totalLines        Int
+  languages         String[]
+  earlyMorning      String
+  lateNight         String
+
+   @@unique([uniqueToken, date]) 
+}
+
+
+model gitStreak{
+  unqiueToken String @unique
+  gitDate String
+  count Int
+  level Int
 }
