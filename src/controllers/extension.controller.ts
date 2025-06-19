@@ -103,9 +103,10 @@ const createUserStats = asyncHandler(async (req: Request, res: Response) => {
         uniqueToken: payload.uniqueToken,
       },
     });
+
     await prisma.userDailyStats.updateMany({
       where: {
-        uniqueToken: userExist.uniqueToken,
+        uniqueToken: userExist.uniqueToken || "",
       },
       data: {
         uniqueToken: payload.uniqueToken,

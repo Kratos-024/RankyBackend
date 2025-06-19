@@ -36,9 +36,7 @@ const generateAccessAndRefreshToken = (data: any) => {
     const access_token = generateAccessToken(data);
     const refresh_token = generatRefreshToken(data);
     return { access_token, refresh_token };
-  } catch (error) {
-    console.log("Error", error);
-  }
+  } catch (error) {}
 };
 const userAuth = asyncHandler(async (req: Request, res: Response) => {
   try {
@@ -68,8 +66,6 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
     const gitToken_ = (await authorizingUser.text())
       .split("&")[0]
       .split("=")[1];
-    console.log("gitToken_gitToken_gitToken_gitToken_", gitToken_);
-    const gitToken = process.env.TOEKN;
     const userInfoResponse = await fetch("https://api.github.com/user", {
       method: "GET",
       headers: {
@@ -79,12 +75,11 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
       },
     });
     const userInfoData = await userInfoResponse.json();
-
+    const response = await createAndLoginAccountAndSendAuth(userInfoData);
+    console.log(response);
     res
       .status(200)
-      .send(
-        new ApiResponse(200, "Successfully get the user info", userInfoData)
-      );
+      .send(new ApiResponse(200, "Successfully get the user info", response));
   } catch (error: any) {
     const errorStr = `Error has occurred on UserAuth: ${error.message}`;
     console.log(errorStr);
@@ -93,11 +88,7 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
       .send(new ApiError(error.statusCode || 500, errorStr));
   }
 });
-const createAccountAndSendAuth = async (
-  req: Request,
-  res: Response,
-  data: any
-) => {
+const createAndLoginAccountAndSendAuth = async (data: any) => {
   try {
     const { email, avatar_url, name, bio, twitter_username, login } = data;
     const findUser = await prisma.userAccount.findFirst({
@@ -106,25 +97,46 @@ const createAccountAndSendAuth = async (
         username: login,
       },
     });
+    console.log("Find user", findUser);
+    const refreshToken = generatRefreshToken({
+      email,
+      name,
+      login,
+    });
+    const accessToken = generateAccessToken({
+      email,
+      avatar_url,
+      name,
+      bio,
+      twitter_username,
+      login,
+    });
+
     if (!findUser) {
+      console.log("Came to create");
+
       const createAccount = await prisma.userAccount.create({
         data: {
           email,
           avatar_url,
           name,
           bio,
-
+          username: login,
           refreshToken,
           accessToken,
         },
       });
-      res
-        .send(200)
-        .send(
-          new ApiResponse(200, "Successfully Login to account", createAccount)
-        );
-      return;
+
+      const response = {
+        message: "Successfully Login to account",
+        statusCode: 200,
+        data: createAccount,
+      };
+
+      return response;
     } else {
+      console.log("Came to updte");
+
       const loginToAccount = await prisma.userAccount.update({
         where: {
           email,
@@ -132,14 +144,29 @@ const createAccountAndSendAuth = async (
         },
         data: { refreshToken, accessToken },
       });
-      res
-        .send(200)
-        .send(
-          new ApiResponse(200, "Successfully Login to account", loginToAccount)
-        );
-      return;
+      console.log(refreshToken, accessToken);
+
+      const response = {
+        message: "Successfully Login to account",
+        statusCode: 200,
+        data: loginToAccount,
+      };
+
+      return response;
     }
-  } catch (error) {}
+  } catch (error: any) {
+    const errorStr = `Error has occurred on UserAuth: ${error.message}`;
+    console.log(errorStr);
+    const errorResponse = {
+      statusCode: 500,
+      message: errorStr,
+    };
+    return errorResponse;
+  }
 };
 
-export { userAuth };
+const verifyUser = asyncHandler(async (req: Request, res: Response) => {
+  res.status(201).send(new ApiResponse(201, "Successfully verify the user"));
+});
+
+export { userAuth, verifyUser };

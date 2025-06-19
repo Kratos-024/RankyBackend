@@ -1,7 +1,9 @@
 import { Router } from "express";
-import { userAuth } from "../controllers/user_auth.controller";
+import { userAuth, verifyUser } from "../controllers/user_auth.controller";
+import veriyUserAuth from "../middlewares/auth";
 
 const userRouter = Router();
 userRouter.route("/authorize").post(userAuth);
+userRouter.route("/verify-user-auth").post(veriyUserAuth, verifyUser);
 
 export default userRouter;
