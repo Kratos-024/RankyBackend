@@ -11,7 +11,6 @@ const generateAccessToken = (data: any) => {
     if (!accessSecret) {
       throw new Error("ERROR has been occured on generating Access Token");
     }
-    const refreshSecret = process.env.REFRESHTOKENSECRET;
     const access_token = sign(data, accessSecret, { expiresIn: `${1}Hour` });
     return access_token;
   } catch (error) {
@@ -31,13 +30,6 @@ const generatRefreshToken = (data: any) => {
   }
 };
 
-const generateAccessAndRefreshToken = (data: any) => {
-  try {
-    const access_token = generateAccessToken(data);
-    const refresh_token = generatRefreshToken(data);
-    return { access_token, refresh_token };
-  } catch (error) {}
-};
 const userAuth = asyncHandler(async (req: Request, res: Response) => {
   try {
     const userAuthCode = req.body.code;
@@ -76,7 +68,6 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
     });
     const userInfoData = await userInfoResponse.json();
     const response = await createAndLoginAccountAndSendAuth(userInfoData);
-    console.log(response);
     res
       .status(200)
       .send(new ApiResponse(200, "Successfully get the user info", response));
@@ -97,7 +88,6 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
         username: login,
       },
     });
-    console.log("Find user", findUser);
     const refreshToken = generatRefreshToken({
       email,
       name,
@@ -113,8 +103,6 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
     });
 
     if (!findUser) {
-      console.log("Came to create");
-
       const createAccount = await prisma.userAccount.create({
         data: {
           email,
@@ -135,15 +123,12 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
 
       return response;
     } else {
-      console.log("Came to updte");
-
       const loginToAccount = await prisma.userAccount.update({
         where: {
           username: login,
         },
         data: { refreshToken, accessToken },
       });
-      console.log(refreshToken, accessToken);
 
       const response = {
         message: "Successfully Login to account",

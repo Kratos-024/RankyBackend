@@ -56,18 +56,18 @@ function calculateUserLevel(input: StatsInput): Output {
 const createUserStats = asyncHandler(async (req: Request, res: Response) => {
   try {
     const payload = req.body.payload;
-    if (!payload.username || !payload.uniqueToken) {
+    if (!payload.username || !payload.uniqueId) {
       throw new ApiError(401, "payload is empty");
     }
     const userExist = await prisma.userAccount.findFirst({
-      where: { username: payload.username },
+      where: { uniqueId: payload.uniqueId },
     });
     if (!userExist) {
-      const createUser = await prisma.userAccount.create({
+      await prisma.userAccount.create({
         data: {
           name: payload.name,
           username: payload.username,
-          uniqueToken: payload.uniqueToken,
+          uniqueId: payload.uniqueId,
           email: payload.email,
         },
       });
@@ -76,47 +76,17 @@ const createUserStats = asyncHandler(async (req: Request, res: Response) => {
           date: payload.date,
           streak: 0,
           username: payload.username,
-          uniqueToken: payload.uniqueToken,
+          uniqueId: payload.uniqueId,
         },
       });
-
-      res
-        .status(200)
-        .send(
-          new ApiResponse(200, "SuccessFully create userAccount", createUser)
-        );
-      return;
     }
-    const updateUser = await prisma.userAccount.update({
-      where: {
-        username: payload.username,
-      },
-      data: {
-        uniqueToken: payload.uniqueToken,
-      },
-    });
-    await prisma.streak.update({
-      where: {
-        username: payload.username,
-      },
-      data: {
-        uniqueToken: payload.uniqueToken,
-      },
-    });
-
-    await prisma.userDailyStats.updateMany({
-      where: {
-        uniqueToken: userExist.uniqueToken || "",
-      },
-      data: {
-        uniqueToken: payload.uniqueToken,
-      },
-    });
     res
       .status(200)
       .send(
-        new ApiResponse(200, "SuccessFully Updated userAccount", updateUser)
+        new ApiResponse(200, "SuccessFully create userAccount", "createUser")
       );
+    return;
+
     return;
   } catch (error: any) {
     const errorStr = `Error has occurred on UserAuth: ${error.message}`;
@@ -139,27 +109,23 @@ const gettingUserTimeSpent = asyncHandler(
 
       const {
         date,
+        user,
+        email,
         totalTimeSeconds,
         totalTimeMinutes,
         totalWords,
         totalLines,
         languages,
-        uniqueToken,
+        uniqueId,
       } = payload;
 
       const prevDay = calcPrevDate();
       var streakResponse = await prisma.streak.findFirst({
         where: {
-          uniqueToken,
+          uniqueId,
         },
       });
-      //   || {
-      //   streak: 0,
-      //   id: "0",
-      //   uniqueToken: "0",
-      //   date: "0",
-      //   username: "0",
-      // };
+
       if (streakResponse) {
         if (streakResponse?.date != date) {
           if (streakResponse?.date === prevDay) {
@@ -169,7 +135,7 @@ const gettingUserTimeSpent = asyncHandler(
           }
           await prisma.streak.update({
             where: {
-              id: streakResponse?.id,
+              uniqueId: streakResponse?.uniqueId,
             },
             data: {
               date: payload.date,
@@ -177,27 +143,21 @@ const gettingUserTimeSpent = asyncHandler(
             },
           });
         }
-      } else {
-        await prisma.streak.create({
-          data: {
-            date: payload.date,
-            streak: 1,
-            uniqueToken: uniqueToken,
-            username: payload.username,
-          },
-        });
       }
 
-      const userDailyStatsResponse = await prisma.userDailyStats.findFirst({
+      const userDailyStatsResponse = await prisma.userDailyStats.findUnique({
         where: {
-          uniqueToken: uniqueToken,
+          uniqueId_date: {
+            uniqueId: uniqueId,
+            date: date,
+          },
         },
       });
-
+      var response;
       if (!userDailyStatsResponse) {
-        await prisma.userDailyStats.create({
+        response = await prisma.userDailyStats.create({
           data: {
-            uniqueToken,
+            uniqueId: uniqueId,
             date,
             totalTimeSeconds,
             totalTimeMinutes,
@@ -206,18 +166,20 @@ const gettingUserTimeSpent = asyncHandler(
             languages,
             earlyMorning,
             lateNight,
+            username: user,
+            email: email,
           },
         });
       } else {
-        await prisma.userDailyStats.update({
+        response = await prisma.userDailyStats.update({
           where: {
-            uniqueToken_date: {
-              uniqueToken: userDailyStatsResponse.uniqueToken,
+            uniqueId_date: {
+              uniqueId: userDailyStatsResponse.uniqueId,
               date: date,
             },
           },
           data: {
-            uniqueToken,
+            uniqueId: uniqueId,
             date,
             totalTimeSeconds: { increment: totalTimeSeconds },
             totalTimeMinutes: { increment: totalTimeMinutes },
@@ -226,23 +188,46 @@ const gettingUserTimeSpent = asyncHandler(
             languages,
             earlyMorning,
             lateNight,
+            username: user,
+            email: email,
           },
         });
       }
+      const languageEntry = await prisma.languages.findUnique({
+        where: { uniqueId },
+      });
 
-      // const { gitDate, count, level } = calculateUserLevel({
-      //   totalTimeSeconds: response.totalTimeSeconds,
-      //   totalTimeMinutes: response.totalTimeMinutes,
-      //   totalWords: response.totalWords,
-      //   totalLines: response.totalLines,
-      //   date: response.date,
-      // });
-      // await prisma.gitStreak.update({
-      //   where: {
-      //     unqiueToken: uniqueToken,
-      //   },
-      //   data: { gitDate, count, level },
-      // });
+      if (languageEntry) {
+        const existingLanguages = languageEntry?.language || [];
+        const newIncomingLanguages = payload.languages || [];
+
+        const languageSet = new Set([
+          ...existingLanguages,
+          ...newIncomingLanguages,
+        ]);
+        const updatedLanguageArray = Array.from(languageSet);
+        if (updatedLanguageArray != existingLanguages) {
+          await prisma.languages.update({
+            where: { uniqueId },
+            data: {
+              language: updatedLanguageArray,
+            },
+          });
+        }
+      }
+      const { gitDate, count, level } = calculateUserLevel({
+        totalTimeSeconds: response.totalTimeSeconds,
+        totalTimeMinutes: response.totalTimeMinutes,
+        totalWords: response.totalWords,
+        totalLines: response.totalLines,
+        date: response.date,
+      });
+      await prisma.gitStreak.update({
+        where: {
+          uniqueId: uniqueId,
+        },
+        data: { gitDate, count, level },
+      });
       res
         .status(200)
         .send(new ApiResponse(200, "Successfully done the operations"));
@@ -281,48 +266,45 @@ const getUserStat = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-const generateUniqueToken = asyncHandler(
-  async (req: Request, res: Response) => {
-    try {
-      const uniqueToken = uuid();
-      const userName = req.body.username;
-      if (!userName || !uniqueToken) {
-        throw new ApiError(402, "uniqueToken or userName is empty");
-      }
-      const findAcc = await prisma.userAccount.findFirst({
-        where: {
-          username: userName,
-        },
-      });
-      if (findAcc?.id) {
-        res.status(200).send(
-          new ApiResponse(200, "Successfully get the old token", {
-            uniqueToken: findAcc.uniqueToken,
-            userName: findAcc.username,
-          })
-        );
-        return;
-      }
-      res.status(200).send(
-        new ApiResponse(200, "Successfully Created the token", {
-          uniqueToken: uniqueToken,
-          userName: userName,
-        })
-      );
-      return;
-    } catch (error: any) {
-      const errorStr = `Error has occurred on generateUniqueToken: ${error?.message}`;
-      console.log(errorStr);
-      res
-        .status(error.statusCode || 500)
-        .send(new ApiError(error.statusCode || 500, errorStr));
-    }
-  }
-);
+// const generateuniqueId = asyncHandler(async (req: Request, res: Response) => {
+//   try {
+//     const uniqueId = uuid();
+//     const userName = req.body.username;
+//     if (!userName || !uniqueId) {
+//       throw new ApiError(402, "uniqueId or userName is empty");
+//     }
+//     const findAcc = await prisma.userAccount.findFirst({
+//       where: {
+//         username: userName,
+//       },
+//     });
+//     if (findAcc?.id) {
+//       res.status(200).send(
+//         new ApiResponse(200, "Successfully get the old token", {
+//           uniqueId: findAcc.uniqueId,
+//           userName: findAcc.username,
+//         })
+//       );
+//       return;
+//     }
+//     res.status(200).send(
+//       new ApiResponse(200, "Successfully Created the token", {
+//         uniqueId: uniqueId,
+//         userName: userName,
+//       })
+//     );
+//     return;
+//   } catch (error: any) {
+//     const errorStr = `Error has occurred on generateuniqueId: ${error?.message}`;
+//     console.log(errorStr);
+//     res
+//       .status(error.statusCode || 500)
+//       .send(new ApiError(error.statusCode || 500, errorStr));
+//   }
+// });
 export {
   gettingUserTimeSpent,
   createUserStats,
   calculateUserLevel,
-  generateUniqueToken,
   getUserStat,
 };

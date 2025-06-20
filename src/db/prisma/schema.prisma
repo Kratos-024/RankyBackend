@@ -17,7 +17,7 @@ datasource db {
 
 model Streak {
   id String @unique() @default(uuid())
-  uniqueToken String  @unique()
+  uniqueId String  @unique()
   date String
   username String @unique()
   streak Int  
@@ -26,7 +26,7 @@ model Streak {
 model UserAccount {
   id String @unique() @default(uuid())
   name String
-  uniqueToken String?  @unique()
+  uniqueId String?  @unique()
   username String? @unique()
   avatar_url String?
   email String @unique()
@@ -38,12 +38,15 @@ model UserAccount {
 model Languages {
   id String @unique() @default(uuid())
   language String[] 
+  uniqueId String   @unique       
+
+
 }
 
 
 model UserDailyStats {
   id                String  @id @default(uuid()) 
-  uniqueToken       String
+  uniqueId       String
   date              String
   totalTimeSeconds  Decimal
   totalTimeMinutes  Decimal
@@ -52,13 +55,14 @@ model UserDailyStats {
   languages         String[]
   earlyMorning      String
   lateNight         String
-
-   @@unique([uniqueToken, date]) 
+  username          String
+  email             String
+   @@unique([uniqueId, date]) 
 }
 
 
 model gitStreak{
-  unqiueToken String @unique
+  uniqueId String @unique
   gitDate String
   count Int
   level Int
