@@ -12,7 +12,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://ranky_owner:npg_4Q6LlnqhSGvE@ep-steep-hall-a80y0y04-pooler.eastus2.azure.neon.tech/ranky?sslmode=require"
+  url      = "postgresql://neondb_owner:npg_r4VZigeylcq8@ep-mute-bush-a8votp19-pooler.eastus2.azure.neon.tech/neondb?sslmode=require"
 }
 
 model Streak {
@@ -26,7 +26,7 @@ model Streak {
 model UserAccount {
   id String @unique() @default(uuid())
   name String
-  uniqueId String?  @unique()
+  uniqueId String  @unique()
   username String? @unique()
   avatar_url String?
   email String @unique()
@@ -38,7 +38,7 @@ model UserAccount {
 model Languages {
   id String @unique() @default(uuid())
   language String[] 
-  uniqueId String   @unique       
+  uniqueId String  @unique()
 
 
 }
@@ -46,7 +46,7 @@ model Languages {
 
 model UserDailyStats {
   id                String  @id @default(uuid()) 
-  uniqueId       String
+  uniqueId          String  @unique()
   date              String
   totalTimeSeconds  Decimal
   totalTimeMinutes  Decimal
@@ -62,7 +62,7 @@ model UserDailyStats {
 
 
 model gitStreak{
-  uniqueId String @unique
+  uniqueId String  @unique()
   gitDate String
   count Int
   level Int

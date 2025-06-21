@@ -81,17 +81,17 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
 });
 const createAndLoginAccountAndSendAuth = async (data: any) => {
   try {
-    const { email, avatar_url, name, bio, twitter_username, login } = data;
+    const { email, avatar_url, name, bio, twitter_username, login, id } = data;
     const findUser = await prisma.userAccount.findFirst({
       where: {
-        email,
-        username: login,
+        uniqueId: `${id}`,
       },
     });
     const refreshToken = generatRefreshToken({
       email,
       name,
       login,
+      id: `${id}`,
     });
     const accessToken = generateAccessToken({
       email,
@@ -100,6 +100,7 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
       bio,
       twitter_username,
       login,
+      id: `${id}`,
     });
 
     if (!findUser) {
@@ -112,6 +113,7 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
           username: login,
           refreshToken,
           accessToken,
+          uniqueId: `${id}`,
         },
       });
 
@@ -120,6 +122,7 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
         statusCode: 200,
         data: createAccount,
       };
+      console.log(response);
 
       return response;
     } else {
@@ -127,7 +130,7 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
         where: {
           username: login,
         },
-        data: { refreshToken, accessToken },
+        data: { refreshToken, accessToken, email, username: login },
       });
 
       const response = {
@@ -135,7 +138,7 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
         statusCode: 200,
         data: loginToAccount,
       };
-
+      console.log(response);
       return response;
     }
   } catch (error: any) {
@@ -153,6 +156,57 @@ const verifyUser = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).send(new ApiResponse(201, "Successfully verify the user"));
 });
 
+const verifyExtensionAuth = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { secretToken } = req.body;
+
+    // Check if secretToken is provided
+    if (!secretToken) {
+      throw new ApiError(400, "Secret token is required");
+    }
+
+    try {
+     
+      // Check if the token contains required user information
+      if (!decoded.userId) {
+        throw new ApiError(401, "Invalid token: User ID not found");
+      }
+
+      const userExist = await prisma.userAccount.findFirst({
+        where: {
+        uniqueId:
+      }})
+      // Success response
+      res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            success: true,
+            userId: decoded.userId,
+            message: "Successfully verified the user",
+          },
+          "Authentication verified successfully"
+        )
+      );
+    } catch (error: any) {
+      // Handle JWT specific errors
+      if (error.name === "JsonWebTokenError") {
+        throw new ApiError(401, "Invalid token");
+      } else if (error.name === "TokenExpiredError") {
+        throw new ApiError(401, "Token has expired");
+      } else if (error.name === "NotBeforeError") {
+        throw new ApiError(401, "Token not active yet");
+      } else {
+        // Re-throw ApiError instances
+        if (error instanceof ApiError) {
+          throw error;
+        }
+        // Handle other unexpected errors
+        throw new ApiError(500, "Token verification failed");
+      }
+    }
+  }
+);
 const logoutUser = asyncHandler(async (req: Request, res: Response) => {
   try {
     const username = req.body.username || req.query.username;
@@ -187,4 +241,28 @@ const logoutUser = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export { userAuth, verifyUser, logoutUser };
+const generateAuthToken = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const payload = req.body.payload;
+    if (!payload) {
+      console.log("payload,payload", payload);
+
+      throw new ApiError(403, "ERROR has been occured on generating Token");
+    }
+    console.log(payload);
+    const tokenSecret = process.env.TOKENSECRET || "signedToken";
+    const signedToken = sign(payload, tokenSecret);
+    console.log(signedToken);
+    res
+      .status(201)
+      .send(new ApiResponse(201, "Token generated Successfully", signedToken));
+  } catch (error: any) {
+    const errorStr = `Error has occurred on generateAuthToken: ${error.message}`;
+    console.log(errorStr);
+    res
+      .status(error.statusCode || 500)
+      .send(new ApiError(error.statusCode || 500, errorStr));
+  }
+});
+
+export { userAuth, verifyUser, logoutUser, generateAuthToken };

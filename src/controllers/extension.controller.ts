@@ -59,6 +59,7 @@ const createUserStats = asyncHandler(async (req: Request, res: Response) => {
     if (!payload.username || !payload.uniqueId) {
       throw new ApiError(401, "payload is empty");
     }
+    console.log("kosegfsggl");
     const userExist = await prisma.userAccount.findFirst({
       where: { uniqueId: payload.uniqueId },
     });
@@ -106,6 +107,7 @@ const gettingUserTimeSpent = asyncHandler(
       }
       const earlyMorning = "1";
       const lateNight = "2";
+      console.log("kofgdfgdggdggdfgfgfdg");
 
       const {
         date,
@@ -266,42 +268,6 @@ const getUserStat = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-// const generateuniqueId = asyncHandler(async (req: Request, res: Response) => {
-//   try {
-//     const uniqueId = uuid();
-//     const userName = req.body.username;
-//     if (!userName || !uniqueId) {
-//       throw new ApiError(402, "uniqueId or userName is empty");
-//     }
-//     const findAcc = await prisma.userAccount.findFirst({
-//       where: {
-//         username: userName,
-//       },
-//     });
-//     if (findAcc?.id) {
-//       res.status(200).send(
-//         new ApiResponse(200, "Successfully get the old token", {
-//           uniqueId: findAcc.uniqueId,
-//           userName: findAcc.username,
-//         })
-//       );
-//       return;
-//     }
-//     res.status(200).send(
-//       new ApiResponse(200, "Successfully Created the token", {
-//         uniqueId: uniqueId,
-//         userName: userName,
-//       })
-//     );
-//     return;
-//   } catch (error: any) {
-//     const errorStr = `Error has occurred on generateuniqueId: ${error?.message}`;
-//     console.log(errorStr);
-//     res
-//       .status(error.statusCode || 500)
-//       .send(new ApiError(error.statusCode || 500, errorStr));
-//   }
-// });
 export {
   gettingUserTimeSpent,
   createUserStats,

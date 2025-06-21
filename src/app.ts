@@ -12,7 +12,7 @@ app.use(
 );
 
 app.use(express.json());
-app.use("/api/v1/users", userRouter);
+app.use("/api/v1/users/verify-user-auth", userRouter);
 app.use("/api/v1/extension", extensionRouter);
 
 export default app;
