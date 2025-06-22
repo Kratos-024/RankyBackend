@@ -12,14 +12,14 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://neondb_owner:npg_r4VZigeylcq8@ep-mute-bush-a8votp19-pooler.eastus2.azure.neon.tech/neondb?sslmode=require"
+  url      = "postgresql://rankydb_owner:npg_41aBQoCzrgJX@ep-divine-base-a8axo9b0-pooler.eastus2.azure.neon.tech/rankydb?sslmode=require"
 }
 
 model Streak {
   id String @unique() @default(uuid())
   uniqueId String  @unique()
   date String
-  username String @unique()
+  email String
   streak Int  
 }
 
@@ -48,14 +48,12 @@ model UserDailyStats {
   id                String  @id @default(uuid()) 
   uniqueId          String  @unique()
   date              String
-  totalTimeSeconds  Decimal
   totalTimeMinutes  Decimal
   totalWords        Int
   totalLines        Int
   languages         String[]
   earlyMorning      String
   lateNight         String
-  username          String
   email             String
    @@unique([uniqueId, date]) 
 }

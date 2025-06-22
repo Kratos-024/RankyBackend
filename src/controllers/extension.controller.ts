@@ -20,7 +20,6 @@ const calcPrevDate = () => {
 };
 
 type StatsInput = {
-  totalTimeSeconds: Decimal;
   totalTimeMinutes: Decimal;
   totalWords: number;
   totalLines: number;
@@ -31,52 +30,65 @@ type Output = {
   gitDate: string;
   count: number;
   level: number;
+  intensity: "none" | "low" | "medium" | "high" | "very-high";
 };
 
-function calculateUserLevel(input: StatsInput): Output {
-  const { totalTimeSeconds, totalTimeMinutes, totalWords, totalLines, date } =
-    input;
+function calculateUserLevelAndCount(input: StatsInput): Output {
+  const { totalTimeMinutes, totalWords, totalLines, date } = input;
 
   const minutes = totalTimeMinutes.toNumber();
 
-  const count = Math.round(minutes) * 2 + totalWords * 1 + totalLines * 3;
+  const timeScore = Math.round(minutes * 3);
+  const wordsScore = Math.round(totalWords * 0.8);
+  const linesScore = Math.round(totalLines * 2.5);
 
-  let level = 1;
-  if (count >= 300 && count < 1000) level = 2;
-  else if (count >= 1000 && count < 2000) level = 3;
-  else if (count >= 2000) level = 4;
+  // Calculate total count
+  const count = Math.max(0, timeScore + wordsScore + linesScore);
+
+  let level: number;
+  let intensity: "none" | "low" | "medium" | "high" | "very-high";
+
+  if (count === 0) {
+    level = 0;
+    intensity = "none";
+  } else if (count < 100) {
+    level = 1;
+    intensity = "low";
+  } else if (count < 400) {
+    level = 2;
+    intensity = "medium";
+  } else if (count < 1000) {
+    level = 3;
+    intensity = "high";
+  } else {
+    level = 4;
+    intensity = "very-high";
+  }
 
   return {
     gitDate: date,
     count,
     level,
+    intensity,
   };
 }
 
 const createUserStats = asyncHandler(async (req: Request, res: Response) => {
   try {
     const payload = req.body.payload;
-    if (!payload.username || !payload.uniqueId) {
+
+    if (!payload.email || !payload.uniqueId) {
       throw new ApiError(401, "payload is empty");
     }
-    console.log("kosegfsggl");
     const userExist = await prisma.userAccount.findFirst({
       where: { uniqueId: payload.uniqueId },
     });
-    if (!userExist) {
-      await prisma.userAccount.create({
-        data: {
-          name: payload.name,
-          username: payload.username,
-          uniqueId: payload.uniqueId,
-          email: payload.email,
-        },
-      });
+    if (userExist) {
       await prisma.streak.create({
         data: {
           date: payload.date,
           streak: 0,
-          username: payload.username,
+          email: payload.email,
           uniqueId: payload.uniqueId,
         },
       });
@@ -87,10 +99,8 @@ const createUserStats = asyncHandler(async (req: Request, res: Response) => {
         new ApiResponse(200, "SuccessFully create userAccount", "createUser")
       );
     return;
-
-    return;
   } catch (error: any) {
-    const errorStr = `Error has occurred on UserAuth: ${error.message}`;
+    const errorStr = `Error has occurred on createUserStats: ${error.message}`;
     console.log(errorStr);
     res
       .status(error.statusCode || 500)
@@ -102,18 +112,16 @@ const gettingUserTimeSpent = asyncHandler(
   async (req: Request, res: Response) => {
     try {
       const payload = req.body.payload;
+      console.log("Hello ji from gettingUserTimeSpent", payload);
       if (!payload) {
-        throw new ApiError(401, "message is empty");
+        throw new ApiError(402, "Payload is empty");
       }
       const earlyMorning = "1";
       const lateNight = "2";
-      console.log("kofgdfgdggdggdfgfgfdg");
 
       const {
         date,
-        user,
         email,
-        totalTimeSeconds,
         totalTimeMinutes,
         totalWords,
         totalLines,
@@ -127,7 +135,7 @@ const gettingUserTimeSpent = asyncHandler(
           uniqueId,
         },
       });
-
+      console.log(streakResponse);
       if (streakResponse) {
         if (streakResponse?.date != date) {
           if (streakResponse?.date === prevDay) {
@@ -140,7 +148,9 @@ const gettingUserTimeSpent = asyncHandler(
               uniqueId: streakResponse?.uniqueId,
             },
             data: {
-              date: payload.date,
+              uniqueId,
+              date,
+              email,
               streak: streakResponse?.streak,
             },
           });
@@ -161,14 +171,12 @@ const gettingUserTimeSpent = asyncHandler(
           data: {
             uniqueId: uniqueId,
             date,
-            totalTimeSeconds,
             totalTimeMinutes,
             totalWords,
             totalLines,
             languages,
             earlyMorning,
             lateNight,
-            username: user,
             email: email,
           },
         });
@@ -183,14 +191,12 @@ const gettingUserTimeSpent = asyncHandler(
           data: {
             uniqueId: uniqueId,
             date,
-            totalTimeSeconds: { increment: totalTimeSeconds },
             totalTimeMinutes: { increment: totalTimeMinutes },
             totalWords: { increment: totalWords },
             totalLines: { increment: totalLines },
             languages,
             earlyMorning,
             lateNight,
-            username: user,
             email: email,
           },
         });
@@ -217,24 +223,36 @@ const gettingUserTimeSpent = asyncHandler(
           });
         }
       }
-      const { gitDate, count, level } = calculateUserLevel({
-        totalTimeSeconds: response.totalTimeSeconds,
+      const { gitDate, count, level } = calculateUserLevelAndCount({
         totalTimeMinutes: response.totalTimeMinutes,
         totalWords: response.totalWords,
         totalLines: response.totalLines,
         date: response.date,
       });
-      await prisma.gitStreak.update({
+      console.log({ gitDate, count, level });
+      const isGitStreak = await prisma.gitStreak.findFirst({
         where: {
           uniqueId: uniqueId,
         },
-        data: { gitDate, count, level },
       });
+      if (!isGitStreak) {
+        await prisma.gitStreak.create({
+          data: { uniqueId: uniqueId, gitDate, count, level },
+        });
+      } else {
+        await prisma.gitStreak.update({
+          where: {
+            uniqueId: uniqueId,
+          },
+          data: { gitDate, count, level },
+        });
+      }
+
       res
         .status(200)
         .send(new ApiResponse(200, "Successfully done the operations"));
     } catch (error: any) {
-      const errorStr = `Error has occurred on UserAuth: ${error.message}`;
+      const errorStr = `Error has occurred on gettingUserTimeSpent: ${error.message}`;
       console.log(errorStr);
       res
         .status(error.statusCode || 500)
@@ -268,9 +286,4 @@ const getUserStat = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export {
-  gettingUserTimeSpent,
-  createUserStats,
-  calculateUserLevel,
-  getUserStat,
-};
+export { gettingUserTimeSpent, createUserStats, getUserStat };

@@ -3,7 +3,7 @@ CREATE TABLE "Streak" (
     "id" TEXT NOT NULL,
     "uniqueId" TEXT NOT NULL,
     "date" TEXT NOT NULL,
-    "username" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
     "streak" INTEGER NOT NULL
 );
 
@@ -33,14 +33,12 @@ CREATE TABLE "UserDailyStats" (
     "id" TEXT NOT NULL,
     "uniqueId" TEXT NOT NULL,
     "date" TEXT NOT NULL,
-    "totalTimeSeconds" DECIMAL(65,30) NOT NULL,
     "totalTimeMinutes" DECIMAL(65,30) NOT NULL,
     "totalWords" INTEGER NOT NULL,
     "totalLines" INTEGER NOT NULL,
     "languages" TEXT[],
     "earlyMorning" TEXT NOT NULL,
     "lateNight" TEXT NOT NULL,
-    "username" TEXT NOT NULL,
     "email" TEXT NOT NULL,
 
     CONSTRAINT "UserDailyStats_pkey" PRIMARY KEY ("id")
@@ -59,9 +57,6 @@ CREATE UNIQUE INDEX "Streak_id_key" ON "Streak"("id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Streak_uniqueId_key" ON "Streak"("uniqueId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Streak_username_key" ON "Streak"("username");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserAccount_id_key" ON "UserAccount"("id");

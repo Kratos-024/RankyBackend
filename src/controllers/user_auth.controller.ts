@@ -158,38 +158,36 @@ const verifyUser = asyncHandler(async (req: Request, res: Response) => {
 
 const verifyExtensionAuth = asyncHandler(
   async (req: Request, res: Response) => {
-    const { secretToken } = req.body;
+    console.log(
+      "sdlkfjsdfjdsklfdsklfsdlkfsdklf",
+      " sdlkfjsdfjdsklfdsklfsdlkfsdkl" +
+        "sdlkfjsdfjdsklfdsklfsdlkfsdklfsdlkfjsdfjdsklfdsklfsdlkfsdklfsdlkfjsdfjdsklfdsklfsdlkfsdklf"
+    );
 
-    // Check if secretToken is provided
-    if (!secretToken) {
-      throw new ApiError(400, "Secret token is required");
+    const { userId } = req.body;
+    console.log("sdlkfjsdfjdsklfdsklfsdlkfsdklf", userId);
+    if (!userId) {
+      throw new ApiError(400, "userId is required");
     }
 
     try {
-     
-      // Check if the token contains required user information
-      if (!decoded.userId) {
-        throw new ApiError(401, "Invalid token: User ID not found");
-      }
-
       const userExist = await prisma.userAccount.findFirst({
         where: {
-        uniqueId:
-      }})
-      // Success response
-      res.status(200).json(
-        new ApiResponse(
-          200,
-          {
-            success: true,
-            userId: decoded.userId,
-            message: "Successfully verified the user",
-          },
-          "Authentication verified successfully"
-        )
+          uniqueId: userId,
+        },
+      });
+      if (!userExist) {
+        throw new ApiError(400, "User doesnt exist");
+      }
+
+      res.status(200).send(
+        new ApiResponse(200, "Authentication verified successfully", {
+          success: true,
+          userId: userId,
+          message: "Successfully verified the user",
+        })
       );
     } catch (error: any) {
-      // Handle JWT specific errors
       if (error.name === "JsonWebTokenError") {
         throw new ApiError(401, "Invalid token");
       } else if (error.name === "TokenExpiredError") {
@@ -249,7 +247,7 @@ const generateAuthToken = asyncHandler(async (req: Request, res: Response) => {
 
       throw new ApiError(403, "ERROR has been occured on generating Token");
     }
-    console.log(payload);
+    console.log("vvvv", payload);
     const tokenSecret = process.env.TOKENSECRET || "signedToken";
     const signedToken = sign(payload, tokenSecret);
     console.log(signedToken);
@@ -265,4 +263,10 @@ const generateAuthToken = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export { userAuth, verifyUser, logoutUser, generateAuthToken };
+export {
+  userAuth,
+  verifyUser,
+  logoutUser,
+  generateAuthToken,
+  verifyExtensionAuth,
+};
