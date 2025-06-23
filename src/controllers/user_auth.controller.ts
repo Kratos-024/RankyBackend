@@ -245,6 +245,7 @@ const logoutUser = asyncHandler(async (req: Request, res: Response) => {
 
 const generateAuthToken = asyncHandler(async (req: Request, res: Response) => {
   try {
+    console.log("jksfgshkklsdkdlsf");
     const payload = req.body.payload;
     if (!payload) {
       console.log("payload,payload", payload);

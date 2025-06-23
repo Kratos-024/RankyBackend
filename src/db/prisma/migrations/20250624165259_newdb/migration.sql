@@ -39,6 +39,7 @@ CREATE TABLE "UserDailyStats" (
 
 -- CreateTable
 CREATE TABLE "gitStreak" (
+    "id" TEXT,
     "uniqueId" TEXT NOT NULL,
     "gitDate" TEXT NOT NULL,
     "count" INTEGER NOT NULL,
@@ -71,13 +72,7 @@ CREATE UNIQUE INDEX "UserAccount_username_key" ON "UserAccount"("username");
 CREATE UNIQUE INDEX "UserAccount_email_key" ON "UserAccount"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserDailyStats_uniqueId_key" ON "UserDailyStats"("uniqueId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "UserDailyStats_uniqueId_date_key" ON "UserDailyStats"("uniqueId", "date");
-
--- CreateIndex
-CREATE UNIQUE INDEX "gitStreak_uniqueId_key" ON "gitStreak"("uniqueId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "gitStreak_gitDate_uniqueId_key" ON "gitStreak"("gitDate", "uniqueId");

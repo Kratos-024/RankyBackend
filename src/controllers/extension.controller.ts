@@ -167,7 +167,6 @@ const gettingUserTimeSpent = asyncHandler(
           uniqueId,
         },
       });
-      console.log(streakResponse);
       if (streakResponse) {
         if (streakResponse?.date != date) {
           if (streakResponse?.date === prevDay) {
@@ -187,6 +186,15 @@ const gettingUserTimeSpent = asyncHandler(
             },
           });
         }
+      } else {
+        await prisma.streak.create({
+          data: {
+            uniqueId,
+            date,
+            email,
+            streak: 0,
+          },
+        });
       }
 
       const userDailyStatsResponse = await prisma.userDailyStats.findUnique({
@@ -289,7 +297,10 @@ const gettingUserTimeSpent = asyncHandler(
         });
         await prisma.gitStreak.update({
           where: {
-            uniqueId: uniqueId,
+            gitDate_uniqueId: {
+              gitDate: gitDate,
+              uniqueId: uniqueId,
+            },
           },
           data: {
             count: newStreak.count,
@@ -297,26 +308,26 @@ const gettingUserTimeSpent = asyncHandler(
           },
         });
       }
-      const isStreak = await prisma.streak.findFirst({
-        where: {
-          uniqueId: uniqueId,
-        },
-      });
-      const newStreak =
-        isStreak?.date === date
-          ? isStreak?.streak
-          : isStreak?.date === prevDay
-          ? (isStreak.streak += 1)
-          : 0;
-      await prisma.streak.update({
-        where: {
-          uniqueId: uniqueId,
-        },
-        data: {
-          streak: newStreak,
-          date: date,
-        },
-      });
+      // const isStreak = await prisma.streak.findFirst({
+      //   where: {
+      //     uniqueId: uniqueId,
+      //   },
+      // });
+      // const newStreak =
+      //   isStreak?.date === date
+      //     ? isStreak?.streak
+      //     : isStreak?.date === prevDay
+      //     ? (isStreak.streak += 1)
+      //     : 1;
+      // await prisma.streak.update({
+      //   where: {
+      //     uniqueId: uniqueId,
+      //   },
+      //   data: {
+      //     streak: newStreak,
+      //     date: date,
+      //   },
+      // });
       res
         .status(200)
         .send(new ApiResponse(200, "Successfully done the operations"));
