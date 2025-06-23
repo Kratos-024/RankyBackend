@@ -10,7 +10,7 @@ CREATE TABLE "Streak" (
 -- CreateTable
 CREATE TABLE "UserAccount" (
     "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    "name" TEXT,
     "uniqueId" TEXT NOT NULL,
     "username" TEXT,
     "avatar_url" TEXT,
@@ -19,13 +19,6 @@ CREATE TABLE "UserAccount" (
     "accessToken" TEXT,
     "bio" TEXT,
     "twitter_username" TEXT
-);
-
--- CreateTable
-CREATE TABLE "Languages" (
-    "id" TEXT NOT NULL,
-    "language" TEXT[],
-    "uniqueId" TEXT NOT NULL
 );
 
 -- CreateTable
@@ -52,6 +45,13 @@ CREATE TABLE "gitStreak" (
     "level" INTEGER NOT NULL
 );
 
+-- CreateTable
+CREATE TABLE "Languages" (
+    "id" TEXT NOT NULL,
+    "language" TEXT[],
+    "uniqueId" TEXT NOT NULL
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Streak_id_key" ON "Streak"("id");
 
@@ -71,12 +71,6 @@ CREATE UNIQUE INDEX "UserAccount_username_key" ON "UserAccount"("username");
 CREATE UNIQUE INDEX "UserAccount_email_key" ON "UserAccount"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Languages_id_key" ON "Languages"("id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Languages_uniqueId_key" ON "Languages"("uniqueId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "UserDailyStats_uniqueId_key" ON "UserDailyStats"("uniqueId");
 
 -- CreateIndex
@@ -84,3 +78,24 @@ CREATE UNIQUE INDEX "UserDailyStats_uniqueId_date_key" ON "UserDailyStats"("uniq
 
 -- CreateIndex
 CREATE UNIQUE INDEX "gitStreak_uniqueId_key" ON "gitStreak"("uniqueId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "gitStreak_gitDate_uniqueId_key" ON "gitStreak"("gitDate", "uniqueId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Languages_id_key" ON "Languages"("id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Languages_uniqueId_key" ON "Languages"("uniqueId");
+
+-- AddForeignKey
+ALTER TABLE "Streak" ADD CONSTRAINT "Streak_uniqueId_fkey" FOREIGN KEY ("uniqueId") REFERENCES "UserAccount"("uniqueId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserDailyStats" ADD CONSTRAINT "UserDailyStats_uniqueId_fkey" FOREIGN KEY ("uniqueId") REFERENCES "UserAccount"("uniqueId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "gitStreak" ADD CONSTRAINT "gitStreak_uniqueId_fkey" FOREIGN KEY ("uniqueId") REFERENCES "UserAccount"("uniqueId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Languages" ADD CONSTRAINT "Languages_uniqueId_fkey" FOREIGN KEY ("uniqueId") REFERENCES "UserAccount"("uniqueId") ON DELETE RESTRICT ON UPDATE CASCADE;

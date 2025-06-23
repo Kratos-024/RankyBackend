@@ -3,8 +3,10 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { prisma } from "../db";
-import { v7 as uuid } from "uuid";
 import { Decimal } from "@prisma/client/runtime/library";
+const TIME_WEIGHT = 2;
+const WORDS_WEIGHT = 0.1;
+const LINES_WEIGHT = 0.2;
 
 const calcPrevDate = () => {
   const yesterday = new Date(Date.now() - 86400 * 1000);
@@ -37,12 +39,10 @@ function calculateUserLevelAndCount(input: StatsInput): Output {
   const { totalTimeMinutes, totalWords, totalLines, date } = input;
 
   const minutes = totalTimeMinutes.toNumber();
+  const timeScore = Math.round(minutes * TIME_WEIGHT);
+  const wordsScore = Math.round(totalWords * WORDS_WEIGHT);
+  const linesScore = Math.round(totalLines * LINES_WEIGHT);
 
-  const timeScore = Math.round(minutes * 3);
-  const wordsScore = Math.round(totalWords * 0.8);
-  const linesScore = Math.round(totalLines * 2.5);
-
-  // Calculate total count
   const count = Math.max(0, timeScore + wordsScore + linesScore);
 
   let level: number;
@@ -54,14 +54,17 @@ function calculateUserLevelAndCount(input: StatsInput): Output {
   } else if (count < 100) {
     level = 1;
     intensity = "low";
-  } else if (count < 400) {
+  } else if (count < 500) {
     level = 2;
     intensity = "medium";
   } else if (count < 1000) {
     level = 3;
     intensity = "high";
-  } else {
+  } else if (count < 1500) {
     level = 4;
+    intensity = "high";
+  } else {
+    level = 5;
     intensity = "very-high";
   }
 
@@ -70,6 +73,35 @@ function calculateUserLevelAndCount(input: StatsInput): Output {
     count,
     level,
     intensity,
+  };
+}
+function updateGitStreak(input: {
+  oldLevel: number;
+  oldCount: number;
+  newLevel: number;
+  newCount: number;
+}) {
+  const { oldLevel, oldCount, newLevel, newCount } = input;
+  const count = oldCount + newCount;
+  var levelByAdd = oldLevel + newLevel;
+  var level;
+  if (levelByAdd === 0) {
+    level = 0;
+  } else if (levelByAdd === 1 || levelByAdd === 2) {
+    level = 1;
+  } else if (levelByAdd <= 4) {
+    level = 2;
+  } else if (levelByAdd <= 6) {
+    level = 3;
+  } else if (levelByAdd <= 8) {
+    level = 4;
+  } else {
+    level = 5;
+  }
+
+  return {
+    count,
+    level,
   };
 }
 
@@ -222,6 +254,14 @@ const gettingUserTimeSpent = asyncHandler(
             },
           });
         }
+      } else {
+        await prisma.languages.create({
+          data: {
+            uniqueId,
+
+            language: languages,
+          },
+        });
       }
       const { gitDate, count, level } = calculateUserLevelAndCount({
         totalTimeMinutes: response.totalTimeMinutes,
@@ -229,25 +269,54 @@ const gettingUserTimeSpent = asyncHandler(
         totalLines: response.totalLines,
         date: response.date,
       });
-      console.log({ gitDate, count, level });
       const isGitStreak = await prisma.gitStreak.findFirst({
         where: {
           uniqueId: uniqueId,
+          gitDate: date,
         },
       });
+
       if (!isGitStreak) {
         await prisma.gitStreak.create({
           data: { uniqueId: uniqueId, gitDate, count, level },
         });
       } else {
+        const newStreak = updateGitStreak({
+          oldLevel: isGitStreak.level,
+          oldCount: isGitStreak.count,
+          newLevel: level,
+          newCount: count,
+        });
         await prisma.gitStreak.update({
           where: {
             uniqueId: uniqueId,
           },
-          data: { gitDate, count, level },
+          data: {
+            count: newStreak.count,
+            level: newStreak.level,
+          },
         });
       }
-
+      const isStreak = await prisma.streak.findFirst({
+        where: {
+          uniqueId: uniqueId,
+        },
+      });
+      const newStreak =
+        isStreak?.date === date
+          ? isStreak?.streak
+          : isStreak?.date === prevDay
+          ? (isStreak.streak += 1)
+          : 0;
+      await prisma.streak.update({
+        where: {
+          uniqueId: uniqueId,
+        },
+        data: {
+          streak: newStreak,
+          date: date,
+        },
+      });
       res
         .status(200)
         .send(new ApiResponse(200, "Successfully done the operations"));

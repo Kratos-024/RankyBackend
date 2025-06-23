@@ -12,7 +12,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://rankydb_owner:npg_41aBQoCzrgJX@ep-divine-base-a8axo9b0-pooler.eastus2.azure.neon.tech/rankydb?sslmode=require"
+  url      = ""
 }
 
 model Streak {
@@ -22,11 +22,12 @@ model Streak {
   email String
   streak Int  
   useraccount UserAccount @relation(fields: [uniqueId],references: [uniqueId])
+
 }
 
 model UserAccount {
   id String @unique() @default(uuid())
-  name String
+  name String?
   uniqueId String  @unique()
   username String? @unique()
   avatar_url String?
@@ -62,9 +63,10 @@ model UserDailyStats {
 
 model gitStreak{
   uniqueId String  @unique()
-  gitDate String
+  gitDate String 
   count Int
   level Int
+  @@unique([gitDate,uniqueId])
   UserAccount UserAccount @relation(fields: [uniqueId],references: [uniqueId])
 }
 
@@ -73,7 +75,5 @@ model Languages {
   language String[] 
   uniqueId String  @unique()
   useraccount UserAccount @relation(fields: [uniqueId],references: [uniqueId])
-
-
 }
 

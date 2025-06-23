@@ -58,6 +58,7 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
     const gitToken_ = (await authorizingUser.text())
       .split("&")[0]
       .split("=")[1];
+    console.log("gitkljdgkgjgkdgskg", gitToken_);
     const userInfoResponse = await fetch("https://api.github.com/user", {
       method: "GET",
       headers: {
@@ -67,6 +68,10 @@ const userAuth = asyncHandler(async (req: Request, res: Response) => {
       },
     });
     const userInfoData = await userInfoResponse.json();
+    console.log(
+      "vvvvvvvuserInfoDatauserInfoDatauserInfoDatauserInfoDatauserInfoData",
+      userInfoResponse
+    );
     const response = await createAndLoginAccountAndSendAuth(userInfoData);
     res
       .status(200)
@@ -102,7 +107,6 @@ const createAndLoginAccountAndSendAuth = async (data: any) => {
       login,
       id: `${id}`,
     });
-
     if (!findUser) {
       const createAccount = await prisma.userAccount.create({
         data: {
