@@ -41,13 +41,13 @@ model UserAccount {
   streak Streak?
   languages Languages?
   userdailystats UserDailyStats[]
-  gitstreak gitStreak?
+  gitstreak gitStreak[]
 
 }
 
 model UserDailyStats {
   id                String  @id @default(uuid()) 
-  uniqueId          String  @unique()
+  uniqueId          String 
   date              String
   totalTimeMinutes  Decimal
   totalWords        Int
@@ -60,15 +60,19 @@ model UserDailyStats {
   UserAccount UserAccount @relation(fields: [uniqueId],references: [uniqueId])
 }
 
+model gitStreak {
+  id         String?   @default(uuid()) 
+  uniqueId   String
+  gitDate    String 
+  count      Int
+  level      Int
 
-model gitStreak{
-  uniqueId String  @unique()
-  gitDate String 
-  count Int
-  level Int
-  @@unique([gitDate,uniqueId])
-  UserAccount UserAccount @relation(fields: [uniqueId],references: [uniqueId])
+  @@unique([gitDate, uniqueId])
+
+  UserAccount UserAccount @relation(fields: [uniqueId], references: [uniqueId])
 }
+
+
 
 model Languages {
   id String @unique() @default(uuid())
