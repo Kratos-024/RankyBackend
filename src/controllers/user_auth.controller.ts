@@ -263,10 +263,52 @@ const generateAuthToken = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
+const getUserStats = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { date } = req.body;
+    const userId = req?.user?.id;
+    if (!userId) {
+      throw new ApiError(401, "Please provide user Id");
+    }
+    const userStat = await prisma.userAccount.findUnique({
+      where: { uniqueId: userId },
+      select: {
+        gitstreak: true,
+        streak: true,
+        userdailystats: {
+          where: {
+            date,
+          },
+          select: {
+            earlyMorning: true,
+            lateNight: true,
+          },
+        },
+        languages: true,
+      },
+    });
+
+    if (!userStat) {
+      throw new ApiError(401, "There is no user stat with this user id");
+    }
+    res
+      .status(200)
+      .send(
+        new ApiResponse(200, "Successfully get the user git streak", userStat)
+      );
+  } catch (error: any) {
+    const errorStr = `Error has occurred on getUserStat: ${error.message}`;
+    console.log(errorStr);
+    res
+      .status(error.statusCode || 500)
+      .send(new ApiError(error.statusCode || 500, errorStr));
+  }
+});
 export {
   userAuth,
   verifyUser,
   logoutUser,
   generateAuthToken,
   verifyExtensionAuth,
+  getUserStats,
 };

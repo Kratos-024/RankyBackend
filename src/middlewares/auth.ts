@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ApiError } from "../utils/ApiError";
-import { verify } from "jsonwebtoken";
+import { decode, verify } from "jsonwebtoken";
+import { UserType } from "./user";
 
 const verifyUserAuth = async (
   req: Request,
@@ -33,7 +34,14 @@ const verifyUserAuth = async (
         refreshToken: "",
       });
     }
+    const decodeTheToken = decode(refreshToken) as UserType;
 
+    if (!decodeTheToken) {
+      throw new ApiError(403, "decoding of token failed", {
+        refreshToken: "",
+      });
+    }
+    req.user = decodeTheToken;
     next();
   } catch (error: any) {
     const statusCode = error.statusCode || 500;

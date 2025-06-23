@@ -21,6 +21,7 @@ model Streak {
   date String
   email String
   streak Int  
+  useraccount UserAccount @relation(fields: [uniqueId],references: [uniqueId])
 }
 
 model UserAccount {
@@ -34,15 +35,14 @@ model UserAccount {
   accessToken String?
   bio String?
   twitter_username String?
+
+  //Relations
+  streak Streak?
+  languages Languages?
+  userdailystats UserDailyStats[]
+  gitstreak gitStreak?
+
 }
-model Languages {
-  id String @unique() @default(uuid())
-  language String[] 
-  uniqueId String  @unique()
-
-
-}
-
 
 model UserDailyStats {
   id                String  @id @default(uuid()) 
@@ -55,7 +55,8 @@ model UserDailyStats {
   earlyMorning      String
   lateNight         String
   email             String
-   @@unique([uniqueId, date]) 
+  @@unique([uniqueId, date]) 
+  UserAccount UserAccount @relation(fields: [uniqueId],references: [uniqueId])
 }
 
 
@@ -64,4 +65,15 @@ model gitStreak{
   gitDate String
   count Int
   level Int
+  UserAccount UserAccount @relation(fields: [uniqueId],references: [uniqueId])
 }
+
+model Languages {
+  id String @unique() @default(uuid())
+  language String[] 
+  uniqueId String  @unique()
+  useraccount UserAccount @relation(fields: [uniqueId],references: [uniqueId])
+
+
+}
+
